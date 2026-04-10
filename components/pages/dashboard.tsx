@@ -1,12 +1,17 @@
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Users, AlertTriangle, Ambulance, Heart, Zap } from 'lucide-react'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { LiveMap } from '@/components/live-map'
+import { useEmergency } from '@/lib/emergency-context'
+import { ExecutionTrackingPanel } from '@/components/execution-tracking-panel'
 
 export function Dashboard() {
+  const { cases, activeCaseId, ambulances, hospitals, alerts } = useEmergency()
+  const activeCase = cases.find((item) => item.id === activeCaseId) ?? cases[0]
+  const avgCapacity = Math.round(hospitals.reduce((acc, h) => acc + h.capacity, 0) / hospitals.length)
+
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -22,8 +27,10 @@ export function Dashboard() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">3 critical, 5 moderate, 4 mild</p>
+            <div className="text-2xl font-bold">{cases.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {activeCase.severity.Critical} critical, {activeCase.severity.Moderate} moderate, {activeCase.severity.Minor} minor
+            </p>
           </CardContent>
         </Card>
 
@@ -33,8 +40,8 @@ export function Dashboard() {
             <Ambulance className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
-            <p className="text-xs text-muted-foreground">2 critical, 4 moderate, 2 minor</p>
+            <div className="text-2xl font-bold">{ambulances.filter((a) => a.status === 'En Route').length}</div>
+            <p className="text-xs text-muted-foreground">live dispatch tracking</p>
           </CardContent>
         </Card>
 
@@ -44,8 +51,8 @@ export function Dashboard() {
             <Heart className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">68%</div>
-            <p className="text-xs text-muted-foreground">28 beds available</p>
+            <div className="text-2xl font-bold">{avgCapacity}%</div>
+            <p className="text-xs text-muted-foreground">real-time utilization</p>
           </CardContent>
         </Card>
 
@@ -55,8 +62,8 @@ export function Dashboard() {
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">43</div>
-            <p className="text-xs text-muted-foreground">12 doctors, 31 nurses</p>
+            <div className="text-2xl font-bold">{hospitals.reduce((acc, h) => acc + h.doctors, 0)}</div>
+            <p className="text-xs text-muted-foreground">doctors across all hospitals</p>
           </CardContent>
         </Card>
 
@@ -95,33 +102,34 @@ export function Dashboard() {
             <CardDescription>Critical notifications</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-3">
-              <div className="flex gap-2">
-                <div className="h-2 w-2 rounded-full bg-destructive mt-1 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium text-destructive">O- Blood Low</p>
-                  <p className="text-xs text-muted-foreground">Only 3 units remaining</p>
+            {alerts.map((alert) => (
+              <div
+                key={alert.id}
+                className={`rounded-lg border p-3 ${
+                  alert.priority === 'Critical'
+                    ? 'border-destructive/60 bg-destructive/5 animate-pulse'
+                    : alert.priority === 'High'
+                    ? 'border-yellow-500/50 bg-yellow-500/5'
+                    : 'border-blue-500/40 bg-blue-500/5'
+                }`}
+              >
+                <div className="flex gap-2">
+                  <div
+                    className={`h-2 w-2 rounded-full mt-1 flex-shrink-0 ${
+                      alert.priority === 'Critical'
+                        ? 'bg-destructive'
+                        : alert.priority === 'High'
+                        ? 'bg-yellow-500'
+                        : 'bg-blue-500'
+                    }`}
+                  />
+                  <div className="text-sm">
+                    <p className="font-medium">{alert.title}</p>
+                    <p className="text-xs text-muted-foreground">{alert.detail}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/5 p-3">
-              <div className="flex gap-2">
-                <div className="h-2 w-2 rounded-full bg-yellow-500 mt-1 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium text-yellow-600 dark:text-yellow-400">Hospital A Capacity</p>
-                  <p className="text-xs text-muted-foreground">85% bed occupancy</p>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/5 p-3">
-              <div className="flex gap-2">
-                <div className="h-2 w-2 rounded-full bg-yellow-500 mt-1 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium text-yellow-600 dark:text-yellow-400">Ambulance ETA +5min</p>
-                  <p className="text-xs text-muted-foreground">Unit AM-03 delayed</p>
-                </div>
-              </div>
-            </div>
+            ))}
           </CardContent>
         </Card>
       </div>
@@ -138,9 +146,9 @@ export function Dashboard() {
               <PieChart>
                 <Pie
                   data={[
-                    { name: 'Critical', value: 3 },
-                    { name: 'Moderate', value: 5 },
-                    { name: 'Mild', value: 4 },
+                    { name: 'Critical', value: activeCase.severity.Critical },
+                    { name: 'Moderate', value: activeCase.severity.Moderate },
+                    { name: 'Mild', value: activeCase.severity.Minor },
                   ]}
                   cx="50%"
                   cy="50%"
@@ -169,10 +177,7 @@ export function Dashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart
                 data={[
-                  { name: 'Hospital A', capacity: 68, limit: 100 },
-                  { name: 'Hospital B', capacity: 42, limit: 100 },
-                  { name: 'Hospital C', capacity: 78, limit: 100 },
-                  { name: 'Hospital D', capacity: 35, limit: 100 },
+                  ...hospitals.map((hospital) => ({ name: hospital.name, capacity: hospital.capacity, limit: 100 })),
                 ]}
               >
                 <CartesianGrid strokeDasharray="3 3" />
@@ -185,6 +190,7 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+      <ExecutionTrackingPanel />
     </div>
   )
 }

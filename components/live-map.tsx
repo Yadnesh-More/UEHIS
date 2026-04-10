@@ -1,30 +1,18 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Ambulance, MapPin, AlertTriangle } from 'lucide-react'
-
-interface Marker {
-  id: string
-  x: number
-  y: number
-  type: 'ambulance' | 'incident' | 'hospital'
-  label: string
-  status?: string
-}
-
-const markers: Marker[] = [
-  { id: '1', x: 180, y: 150, type: 'ambulance', label: 'AM-01', status: 'En Route' },
-  { id: '2', x: 250, y: 200, type: 'ambulance', label: 'AM-02', status: 'En Route' },
-  { id: '3', x: 320, y: 280, type: 'incident', label: 'Incident', status: 'Active' },
-  { id: '4', x: 400, y: 150, type: 'hospital', label: 'Hospital A' },
-  { id: '5', x: 100, y: 320, type: 'hospital', label: 'Hospital B' },
-  { id: '6', x: 450, y: 320, type: 'hospital', label: 'Hospital C' },
-  { id: '7', x: 80, y: 80, type: 'ambulance', label: 'AM-03', status: 'Available' },
-]
+import { useEmergency } from '@/lib/emergency-context'
 
 export function LiveMap() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const { ambulances, hospitals, activeCaseId } = useEmergency()
+  const [selectedMarker, setSelectedMarker] = useState<string | null>(null)
   const [hoveredMarker, setHoveredMarker] = useState<string | null>(null)
+  const markers = [
+    ...ambulances.map((a) => ({ id: a.id, x: a.x, y: a.y, type: 'ambulance' as const, label: a.id, status: a.status, detail: `${a.role} -> ${a.assignedHospital}` })),
+    ...hospitals.map((h) => ({ id: h.name, x: h.x, y: h.y, type: 'hospital' as const, label: h.name, status: `${h.capacity}%`, detail: `Capacity ${h.capacity}%` })),
+    { id: `incident-${activeCaseId}`, x: 50, y: 50, type: 'incident' as const, label: `Case #${activeCaseId}`, status: 'Active', detail: 'Emergency incident origin' },
+  ]
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -60,9 +48,29 @@ export function LiveMap() {
     }
     ctx.globalAlpha = 1
 
+    // Draw route paths (ambulance -> hospital)
+    ambulances.forEach((ambulance) => {
+      const hospital = hospitals.find((h) => h.name === ambulance.assignedHospital)
+      if (!hospital) return
+      const ax = (ambulance.x / 100) * canvas.width
+      const ay = (ambulance.y / 100) * canvas.height
+      const hx = (hospital.x / 100) * canvas.width
+      const hy = (hospital.y / 100) * canvas.height
+      ctx.strokeStyle = 'hsl(264, 80%, 65%)'
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([5, 5])
+      ctx.beginPath()
+      ctx.moveTo(ax, ay)
+      ctx.lineTo(hx, hy)
+      ctx.stroke()
+      ctx.setLineDash([])
+    })
+
     // Draw markers
     markers.forEach((marker) => {
       const isHovered = hoveredMarker === marker.id
+      const px = (marker.x / 100) * canvas.width
+      const py = (marker.y / 100) * canvas.height
       const size = isHovered ? 16 : 12
 
       // Draw marker circle
@@ -74,7 +82,7 @@ export function LiveMap() {
           : 'hsl(120, 70%, 50%)'
 
       ctx.beginPath()
-      ctx.arc(marker.x, marker.y, size, 0, Math.PI * 2)
+      ctx.arc(px, py, size, 0, Math.PI * 2)
       ctx.fill()
 
       // Draw border
@@ -88,10 +96,10 @@ export function LiveMap() {
         ctx.font = 'bold 12px sans-serif'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillText(marker.label, marker.x, marker.y)
+        ctx.fillText(marker.label, px, py)
       }
     })
-  }, [hoveredMarker])
+  }, [hoveredMarker, markers, ambulances, hospitals])
 
   const handleCanvasHover = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
@@ -102,7 +110,9 @@ export function LiveMap() {
     const y = e.clientY - rect.top
 
     const hovered = markers.find((m) => {
-      const distance = Math.sqrt((m.x - x) ** 2 + (m.y - y) ** 2)
+      const mx = (m.x / 100) * rect.width
+      const my = (m.y / 100) * rect.height
+      const distance = Math.sqrt((mx - x) ** 2 + (my - y) ** 2)
       return distance < 20
     })
 
@@ -114,6 +124,7 @@ export function LiveMap() {
       <canvas
         ref={canvasRef}
         onMouseMove={handleCanvasHover}
+        onClick={() => setSelectedMarker(hoveredMarker)}
         onMouseLeave={() => setHoveredMarker(null)}
         className="w-full border border-border rounded-lg bg-muted cursor-crosshair"
         style={{ height: '384px' }}
@@ -132,6 +143,21 @@ export function LiveMap() {
           <span>Hospitals</span>
         </div>
       </div>
+      {selectedMarker ? (
+        <div className="rounded-lg border bg-card p-3 text-sm">
+          {(() => {
+            const marker = markers.find((m) => m.id === selectedMarker)
+            if (!marker) return null
+            return (
+              <div>
+                <p className="font-medium">{marker.label}</p>
+                <p className="text-muted-foreground">{marker.detail}</p>
+                <p className="text-xs mt-1">Status: {marker.status}</p>
+              </div>
+            )
+          })()}
+        </div>
+      ) : null}
     </div>
   )
 }

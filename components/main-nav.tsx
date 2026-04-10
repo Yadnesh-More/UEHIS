@@ -4,9 +4,11 @@ import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { Moon, Sun, Clock } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useEmergency } from '@/lib/emergency-context'
 
 export function MainNav() {
   const { theme, setTheme } = useTheme()
+  const { activeCaseId, aiLoading } = useEmergency()
   const [mounted, setMounted] = useState(false)
   const [time, setTime] = useState<string>('')
 
@@ -47,6 +49,9 @@ export function MainNav() {
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="rounded-lg border px-3 py-2 text-xs font-medium">
+            Active Case: #{activeCaseId} {aiLoading ? '(AI processing...)' : ''}
+          </div>
           <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-mono text-foreground">{time || '00:00:00'}</span>

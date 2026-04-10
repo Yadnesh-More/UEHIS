@@ -3,8 +3,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, TrendingUp, Lightbulb } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useEmergency } from '@/lib/emergency-context'
 
 export function AIInsights() {
+  const { applyRecommendation, redirectAmbulances, requestBloodUnits, aiLoading } = useEmergency()
+
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -91,6 +95,9 @@ export function AIInsights() {
                 <Badge className="bg-destructive/10 text-destructive border-destructive/20">Critical</Badge>
               </div>
               <p className="text-xs text-muted-foreground">Order 20 O- and 15 AB- units from regional blood bank</p>
+              <Button size="sm" className="mt-3" onClick={requestBloodUnits} disabled={aiLoading}>
+                Request Blood Units
+              </Button>
             </div>
 
             <div className="rounded-lg border border-border bg-card p-4">
@@ -99,6 +106,9 @@ export function AIInsights() {
                 <Badge className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20">High Priority</Badge>
               </div>
               <p className="text-xs text-muted-foreground">Redirect moderate cases to Hospital B to reduce Hospital A load</p>
+              <Button size="sm" variant="outline" className="mt-3" onClick={redirectAmbulances} disabled={aiLoading}>
+                Redirect Ambulances
+              </Button>
             </div>
 
             <div className="rounded-lg border border-border bg-card p-4">
@@ -107,6 +117,9 @@ export function AIInsights() {
                 <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20">Medium Priority</Badge>
               </div>
               <p className="text-xs text-muted-foreground">Call in 3 backup ambulances from Station 2 for standby</p>
+              <Button size="sm" variant="outline" className="mt-3" onClick={applyRecommendation} disabled={aiLoading}>
+                Apply Recommendation
+              </Button>
             </div>
 
             <div className="rounded-lg border border-border bg-card p-4">

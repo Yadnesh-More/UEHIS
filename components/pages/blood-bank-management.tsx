@@ -5,17 +5,19 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { AlertTriangle } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts'
+import { useEmergency } from '@/lib/emergency-context'
 
 export function BloodBankManagement() {
+  const { bloodUnits } = useEmergency()
   const bloodTypes = [
     { type: 'O+', units: 15, capacity: 50, status: 'Good' },
-    { type: 'O-', units: 3, capacity: 50, status: 'Critical' },
+    { type: 'O-', units: bloodUnits.oNegative, capacity: 50, status: bloodUnits.oNegative < 7 ? 'Critical' : 'Low' },
     { type: 'A+', units: 22, capacity: 50, status: 'Good' },
     { type: 'A-', units: 8, capacity: 50, status: 'Low' },
     { type: 'B+', units: 18, capacity: 50, status: 'Good' },
     { type: 'B-', units: 5, capacity: 50, status: 'Low' },
     { type: 'AB+', units: 12, capacity: 50, status: 'Good' },
-    { type: 'AB-', units: 4, capacity: 50, status: 'Critical' },
+    { type: 'AB-', units: bloodUnits.abNegative, capacity: 50, status: bloodUnits.abNegative < 7 ? 'Critical' : 'Low' },
   ]
 
   const getStatusColor = (status: string) => {

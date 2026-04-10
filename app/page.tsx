@@ -12,10 +12,11 @@ import { HospitalManagement } from '@/components/pages/hospital-management'
 import { BloodBankManagement } from '@/components/pages/blood-bank-management'
 import { AIInsights } from '@/components/pages/ai-insights'
 import { ReportsAnalytics } from '@/components/pages/reports-analytics'
+import { EmergencyProvider } from '@/lib/emergency-context'
 
 type PageType = 'dashboard' | 'cases' | 'triage' | 'ambulances' | 'hospitals' | 'blood' | 'insights' | 'reports'
 
-export default function Home() {
+function EmergencyApp() {
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard')
 
   const renderPage = () => {
@@ -47,11 +48,19 @@ export default function Home() {
         <AppSidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />
         <div className="flex flex-col flex-1 overflow-hidden">
           <MainNav />
-          <main className="flex-1 overflow-auto bg-background">
-            {renderPage()}
+          <main className="flex-1 overflow-auto bg-background transition-all duration-300">
+            <div className="animate-in fade-in-50 duration-300">{renderPage()}</div>
           </main>
         </div>
       </div>
     </SidebarProvider>
+  )
+}
+
+export default function Home() {
+  return (
+    <EmergencyProvider>
+      <EmergencyApp />
+    </EmergencyProvider>
   )
 }

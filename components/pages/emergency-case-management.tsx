@@ -6,53 +6,13 @@ import { Badge } from '@/components/ui/badge'
 import { MapPin, Users, Clock, ChevronDown } from 'lucide-react'
 import { NewCaseModal } from '@/components/new-case-modal'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
+import { useEmergency } from '@/lib/emergency-context'
 
 export function EmergencyCaseManagement() {
-  const [expandedCase, setExpandedCase] = useState<number | null>(1001)
-
-  const cases = [
-    {
-      id: 1001,
-      type: 'Multiple vehicle accident',
-      location: 'Downtown Main Street',
-      status: 'Active',
-      victims: 12,
-      timeAgo: 5,
-      critical: 3,
-      moderate: 5,
-      mild: 4,
-      timeline: [
-        { time: '14:05', event: 'Call received - multi-vehicle accident' },
-        { time: '14:06', event: 'Ambulances dispatched (5 units)' },
-        { time: '14:08', event: 'First responders on scene' },
-        { time: '14:12', event: 'Triage assessment completed' },
-      ],
-    },
-    {
-      id: 1000,
-      type: 'House fire',
-      location: 'Oak Park Avenue',
-      status: 'In Progress',
-      victims: 8,
-      timeAgo: 25,
-      critical: 2,
-      moderate: 3,
-      mild: 3,
-      timeline: [],
-    },
-    {
-      id: 999,
-      type: 'Industrial explosion',
-      location: 'Factory District',
-      status: 'In Progress',
-      victims: 15,
-      timeAgo: 42,
-      critical: 5,
-      moderate: 7,
-      mild: 3,
-      timeline: [],
-    },
-  ]
+  const { cases, activeCaseId, setActiveCase, runAITriage, aiLoading } = useEmergency()
+  const [expandedCase, setExpandedCase] = useState<number | null>(activeCaseId)
 
   return (
     <div className="space-y-6 p-6">
@@ -61,7 +21,13 @@ export function EmergencyCaseManagement() {
           <h1 className="text-3xl font-bold text-foreground">Emergency Case Management</h1>
           <p className="text-muted-foreground">Create and monitor emergency incidents</p>
         </div>
-        <NewCaseModal />
+        <div className="flex items-center gap-2">
+          <Button onClick={() => runAITriage()} disabled={aiLoading}>
+            {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Run AI Triage
+          </Button>
+          <NewCaseModal />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
@@ -73,11 +39,14 @@ export function EmergencyCaseManagement() {
           >
             <Card className="hover:border-primary/50 transition-colors overflow-hidden">
               <CollapsibleTrigger asChild>
-                <div className="cursor-pointer">
+                <div className="cursor-pointer" onClick={() => setActiveCase(caseItem.id)}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-lg">Case #{caseItem.id}</CardTitle>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          Case #{caseItem.id}
+                          {activeCaseId === caseItem.id ? <Badge>Active Case</Badge> : null}
+                        </CardTitle>
                         <CardDescription>{caseItem.type}</CardDescription>
                       </div>
                       <div className="flex items-center gap-4">
@@ -122,13 +91,16 @@ export function EmergencyCaseManagement() {
                     <p className="text-sm text-muted-foreground mb-2">Severity Distribution</p>
                     <div className="flex gap-2 flex-wrap">
                       <Badge variant="outline" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
-                        Critical: {caseItem.critical}
+                        Critical: {caseItem.severity.Critical}
+                      </Badge>
+                      <Badge variant="outline" className="bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20">
+                        Burn: {caseItem.severity.Burn}
                       </Badge>
                       <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20">
-                        Moderate: {caseItem.moderate}
+                        Moderate: {caseItem.severity.Moderate}
                       </Badge>
                       <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
-                        Mild: {caseItem.mild}
+                        Minor: {caseItem.severity.Minor}
                       </Badge>
                     </div>
                   </div>

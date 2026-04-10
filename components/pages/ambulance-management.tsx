@@ -2,17 +2,15 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Radio, Activity } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { LiveMap } from '@/components/live-map'
+import { useEmergency } from '@/lib/emergency-context'
 
 export function AmbulanceManagement() {
-  const ambulances = [
-    { id: 'AM-01', status: 'En Route', location: 'Downtown Main St', patient: 'Critical', eta: '3 min' },
-    { id: 'AM-02', status: 'En Route', location: 'Oak Park Avenue', patient: 'Moderate', eta: '5 min' },
-    { id: 'AM-03', status: 'Available', location: 'Station 1', patient: 'None', eta: '-' },
-    { id: 'AM-04', status: 'Busy', location: 'Hospital A - ER', patient: 'Critical', eta: 'Unloading' },
-    { id: 'AM-05', status: 'En Route', location: 'Highway 5', patient: 'Moderate', eta: '8 min' },
-  ]
+  const { ambulances } = useEmergency()
+  const enRoute = ambulances.filter((a) => a.status === 'En Route').length
+  const available = ambulances.filter((a) => a.status === 'Available').length
 
   return (
     <div className="space-y-6 p-6">
@@ -27,7 +25,7 @@ export function AmbulanceManagement() {
             <CardTitle className="text-sm font-medium">Total Fleet</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{ambulances.length}</div>
             <p className="text-xs text-muted-foreground">operational units</p>
           </CardContent>
         </Card>
@@ -36,7 +34,7 @@ export function AmbulanceManagement() {
             <CardTitle className="text-sm font-medium">En Route</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">5</div>
+            <div className="text-2xl font-bold text-primary">{enRoute}</div>
             <p className="text-xs text-muted-foreground">active assignments</p>
           </CardContent>
         </Card>
@@ -45,7 +43,7 @@ export function AmbulanceManagement() {
             <CardTitle className="text-sm font-medium">Available</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">5</div>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{available}</div>
             <p className="text-xs text-muted-foreground">ready for dispatch</p>
           </CardContent>
         </Card>
@@ -56,8 +54,8 @@ export function AmbulanceManagement() {
           <CardTitle>Fleet Status</CardTitle>
           <CardDescription>Real-time ambulance positions and assignments</CardDescription>
         </CardHeader>
-        <CardContent className="h-96 bg-muted rounded-lg flex items-center justify-center mb-4">
-          <div className="text-center text-muted-foreground">Map visualization coming soon</div>
+        <CardContent className="mb-4">
+          <LiveMap />
         </CardContent>
       </Card>
 
@@ -102,12 +100,14 @@ export function AmbulanceManagement() {
                         {ambulance.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm flex items-center gap-2">
+                    <TableCell className="text-sm">
+                      <span className="inline-flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
-                      {ambulance.location}
+                      {ambulance.assignedHospital}
+                      </span>
                     </TableCell>
-                    <TableCell className="text-sm">{ambulance.patient}</TableCell>
-                    <TableCell className="font-mono text-sm">{ambulance.eta}</TableCell>
+                    <TableCell className="text-sm">{ambulance.role}</TableCell>
+                    <TableCell className="font-mono text-sm">{ambulance.etaMin ? `${ambulance.etaMin} min` : '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

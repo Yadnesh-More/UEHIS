@@ -4,46 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { useEmergency } from '@/lib/emergency-context'
 
 export function HospitalManagement() {
-  const hospitals = [
-    {
-      name: 'Hospital A',
-      status: 'Yellow',
-      icu: 5,
-      general: 8,
-      doctors: 12,
-      specializations: ['Trauma', 'Burn', 'Neuro'],
-      capacity: 68,
-    },
-    {
-      name: 'Hospital B',
-      status: 'Green',
-      icu: 12,
-      general: 18,
-      doctors: 15,
-      specializations: ['Cardiology', 'Trauma'],
-      capacity: 42,
-    },
-    {
-      name: 'Hospital C',
-      status: 'Yellow',
-      icu: 3,
-      general: 5,
-      doctors: 8,
-      specializations: ['General', 'Burn'],
-      capacity: 78,
-    },
-    {
-      name: 'Hospital D',
-      status: 'Green',
-      icu: 8,
-      general: 14,
-      doctors: 10,
-      specializations: ['General', 'Neuro'],
-      capacity: 35,
-    },
-  ]
+  const { hospitals, toggleHospitalIntake } = useEmergency()
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -91,6 +56,21 @@ export function HospitalManagement() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <p className="text-sm font-medium">Accept Incoming Cases</p>
+                  <p className="text-xs text-muted-foreground">
+                    {hospital.acceptsIncoming ? 'Enabled for ambulance intake' : 'Diversion mode active'}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={hospital.acceptsIncoming ? 'default' : 'outline'}
+                  onClick={() => toggleHospitalIntake(hospital.name)}
+                >
+                  {hospital.acceptsIncoming ? 'Accepting' : 'Diverting'}
+                </Button>
+              </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-medium">Bed Capacity</p>
@@ -142,6 +122,7 @@ export function HospitalManagement() {
                   <TableHead>General Beds</TableHead>
                   <TableHead>Doctors</TableHead>
                   <TableHead>Capacity</TableHead>
+                  <TableHead>Incoming Cases</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -161,6 +142,15 @@ export function HospitalManagement() {
                         <Progress value={hospital.capacity} className="h-2 w-20" />
                         <span className="text-sm">{hospital.capacity}%</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant={hospital.acceptsIncoming ? 'default' : 'outline'}
+                        onClick={() => toggleHospitalIntake(hospital.name)}
+                      >
+                        {hospital.acceptsIncoming ? 'Accepting' : 'Diverting'}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

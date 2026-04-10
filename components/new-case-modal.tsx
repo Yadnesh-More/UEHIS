@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Plus } from 'lucide-react'
+import { useEmergency } from '@/lib/emergency-context'
 
 export function NewCaseModal() {
+  const { createCase } = useEmergency()
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState({
     location: '',
@@ -19,7 +21,12 @@ export function NewCaseModal() {
   })
 
   const handleSubmit = () => {
-    // Handle form submission
+    createCase({
+      location: formData.location,
+      caseType: formData.caseType,
+      estimatedVictims: Number(formData.estimatedVictims || 1),
+      description: formData.description,
+    })
     setOpen(false)
     setFormData({ location: '', caseType: '', estimatedVictims: '', description: '' })
   }
