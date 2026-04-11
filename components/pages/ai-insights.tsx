@@ -1,13 +1,62 @@
 'use client'
 
+import { useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, TrendingUp, Lightbulb } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useEmergency } from '@/lib/emergency-context'
 
 export function AIInsights() {
-  const { applyRecommendation, redirectAmbulances, requestBloodUnits, aiLoading } = useEmergency()
+  const { applyRecommendation, redirectAmbulances, requestBloodUnits, aiLoading, cases, activeCaseId, bloodUnits, hospitals, ambulances } =
+    useEmergency()
+
+  const activeCase = cases.find((c) => c.id === activeCaseId) ?? cases[0]
+  const mostLoadedHospital = useMemo(
+    () => (hospitals.length ? [...hospitals].sort((a, b) => b.capacity - a.capacity)[0] : undefined),
+    [hospitals]
+  )
+  const reliefHospital = useMemo(() => {
+    const accepting = hospitals.filter((h) => h.acceptsIncoming)
+    return accepting.length ? [...accepting].sort((a, b) => a.capacity - b.capacity)[0] : undefined
+  }, [hospitals])
+
+  const bloodForecastData = useMemo(() => {
+    const demand = Math.max(0, cases.reduce((a, c) => a + c.victims, 0))
+    const hours = [0, 4, 8, 12, 16, 20, 24]
+    return hours.map((h) => ({
+      t: h === 24 ? '24h' : `${h}h`,
+      oNeg: Math.max(0, Math.round(bloodUnits.oNegative - (demand * h) / 40)),
+      abNeg: Math.max(0, Math.round(bloodUnits.abNegative - (demand * h) / 55)),
+    }))
+  }, [cases, bloodUnits])
+
+  const summaryParagraphs = useMemo(() => {
+    if (!activeCase) {
+      return {
+        p1: 'No active case data is loaded yet. Create a case in Emergency Case Management to populate AI context.',
+        p2: '',
+      }
+    }
+    const o = bloodUnits.oNegative
+    const ab = bloodUnits.abNegative
+    const cap = mostLoadedHospital?.capacity ?? 0
+    const loadName = mostLoadedHospital?.name ?? 'the busiest facility'
+    return {
+      p1: `Current focus: Case #${activeCase.id} (${activeCase.type}) at ${activeCase.location}. Estimated ${activeCase.victims} people involved; triage counts are synced from the database.`,
+      p2: `Key observations from live data: O− supply is at ${o} units and AB− at ${ab} units. ${
+        mostLoadedHospital ? `${loadName} is at about ${cap}% capacity` : 'Hospital metrics are loading'
+      }. ${o < 7 || ab < 7 ? 'Blood replenishment should be prioritized.' : 'Blood levels are within watch thresholds.'}`,
+    }
+  }, [activeCase, bloodUnits, mostLoadedHospital])
+
+  const overloadRisk = mostLoadedHospital ? Math.min(95, Math.round(55 + mostLoadedHospital.capacity * 0.35)) : 72
+  const bloodCrisisRisk = Math.min(95, Math.round(60 + (10 - Math.min(bloodUnits.oNegative, bloodUnits.abNegative)) * 5))
+  const ambulanceShortageRisk = Math.min(
+    95,
+    Math.round(((ambulances.filter((a) => a.status === 'En Route' || a.status === 'Busy').length) / Math.max(1, ambulances.length)) * 90)
+  )
 
   return (
     <div className="space-y-6 p-6">
@@ -25,12 +74,12 @@ export function AIInsights() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4 text-sm leading-relaxed">
-            <p>
-              Current emergency response is operating at high efficiency. The multi-vehicle accident on Downtown Main Street has been successfully triaged with appropriate resource allocation. However, critical alerts require immediate attention.
-            </p>
-            <p>
-              <strong>Key Observations:</strong> O- blood supply is critically low (3 units remaining), Hospital A is approaching capacity at 85% occupancy. Recommend immediate blood bank replenishment order and consider redirecting upcoming moderate-severity cases to Hospital B or D.
-            </p>
+            <p>{summaryParagraphs.p1}</p>
+            {summaryParagraphs.p2 ? (
+              <p>
+                <strong>Key observations:</strong> {summaryParagraphs.p2}
+              </p>
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -50,8 +99,12 @@ export function AIInsights() {
                 <div className="h-2 w-2 rounded-full bg-yellow-500 mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-sm">Hospital Overload Risk</p>
-                  <p className="text-xs text-muted-foreground mt-1">Probability: 72%</p>
-                  <p className="text-xs text-muted-foreground">Hospital A expected to reach 95% capacity within 30 minutes</p>
+                  <p className="text-xs text-muted-foreground mt-1">Probability: {overloadRisk}%</p>
+                  <p className="text-xs text-muted-foreground">
+                    {mostLoadedHospital
+                      ? `${mostLoadedHospital.name} at ${mostLoadedHospital.capacity}% capacity (from database)`
+                      : 'No hospital records loaded'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -61,8 +114,10 @@ export function AIInsights() {
                 <div className="h-2 w-2 rounded-full bg-destructive mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-sm">Blood Supply Crisis Risk</p>
-                  <p className="text-xs text-muted-foreground mt-1">Probability: 85%</p>
-                  <p className="text-xs text-muted-foreground">O- and AB- types critically low; recommend emergency orders</p>
+                  <p className="text-xs text-muted-foreground mt-1">Probability: {bloodCrisisRisk}%</p>
+                  <p className="text-xs text-muted-foreground">
+                    O− {bloodUnits.oNegative} units, AB− {bloodUnits.abNegative} units (live inventory)
+                  </p>
                 </div>
               </div>
             </div>
@@ -72,8 +127,11 @@ export function AIInsights() {
                 <div className="h-2 w-2 rounded-full bg-yellow-500 mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-sm">Ambulance Shortage Risk</p>
-                  <p className="text-xs text-muted-foreground mt-1">Probability: 45%</p>
-                  <p className="text-xs text-muted-foreground">5 of 12 units currently deployed; high demand expected</p>
+                  <p className="text-xs text-muted-foreground mt-1">Probability: {ambulanceShortageRisk}%</p>
+                  <p className="text-xs text-muted-foreground">
+                    {ambulances.filter((a) => a.status === 'En Route' || a.status === 'Busy').length} of {ambulances.length}{' '}
+                    units deployed or busy
+                  </p>
                 </div>
               </div>
             </div>
@@ -102,10 +160,15 @@ export function AIInsights() {
 
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-start justify-between mb-2">
-                <p className="font-medium text-sm">2. Redirect to Hospital B</p>
+                <p className="font-medium text-sm">
+                  2. Redirect to {reliefHospital?.name ?? 'relief facility'}
+                </p>
                 <Badge className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20">High Priority</Badge>
               </div>
-              <p className="text-xs text-muted-foreground">Redirect moderate cases to Hospital B to reduce Hospital A load</p>
+              <p className="text-xs text-muted-foreground">
+                Redirect moderate cases toward {reliefHospital?.name ?? 'the least-loaded accepting hospital'} to ease pressure on{' '}
+                {mostLoadedHospital?.name ?? 'high-utilization sites'}
+              </p>
               <Button size="sm" variant="outline" className="mt-3" onClick={redirectAmbulances} disabled={aiLoading}>
                 Redirect Ambulances
               </Button>
@@ -127,7 +190,9 @@ export function AIInsights() {
                 <p className="font-medium text-sm">4. Monitor Response Time</p>
                 <Badge variant="outline">Info</Badge>
               </div>
-              <p className="text-xs text-muted-foreground">Average response time 7 min; aim to maintain below 8 min</p>
+              <p className="text-xs text-muted-foreground">
+                Open cases: {cases.length}. Keep average response under 8 min as utilization rises.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -136,10 +201,20 @@ export function AIInsights() {
       <Card>
         <CardHeader>
           <CardTitle>Blood Demand Forecast</CardTitle>
-          <CardDescription>Predicted consumption for next 24 hours</CardDescription>
+          <CardDescription>Projected O− / AB− levels from current case volume and inventory</CardDescription>
         </CardHeader>
-        <CardContent className="h-64 bg-muted rounded-lg flex items-center justify-center">
-          <div className="text-center text-muted-foreground">Forecast chart placeholder</div>
+        <CardContent className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={bloodForecastData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis dataKey="t" tick={{ fontSize: 12 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="oNeg" name="O− units" stroke="hsl(0, 84%, 50%)" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="abNeg" name="AB− units" stroke="hsl(264, 100%, 50%)" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
     </div>

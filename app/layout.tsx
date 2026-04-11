@@ -1,7 +1,8 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from 'next-themes'
+import { AuthProvider } from '@/lib/auth-context'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -28,11 +29,12 @@ export const metadata: Metadata = {
     ],
     apple: '/apple-icon.png',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({
@@ -44,7 +46,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

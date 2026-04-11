@@ -8,7 +8,9 @@ export function ExecutionTrackingPanel() {
   const { ambulances, hospitals } = useEmergency()
   const transported = ambulances.filter((a) => a.status === 'Busy').length
   const active = ambulances.filter((a) => a.status !== 'Available').length
-  const avgCapacity = Math.round(hospitals.reduce((acc, h) => acc + h.capacity, 0) / hospitals.length)
+  const avgCapacity =
+    hospitals.length > 0 ? Math.round(hospitals.reduce((acc, h) => acc + h.capacity, 0) / hospitals.length) : 0
+  const ambTotal = ambulances.length
 
   return (
     <Card>
@@ -19,16 +21,16 @@ export function ExecutionTrackingPanel() {
         <div>
           <div className="flex items-center justify-between text-sm mb-2">
             <span>Patients Transported</span>
-            <span>{Math.round((transported / ambulances.length) * 100)}%</span>
+            <span>{ambTotal ? Math.round((transported / ambTotal) * 100) : 0}%</span>
           </div>
-          <Progress value={(transported / ambulances.length) * 100} />
+          <Progress value={ambTotal ? (transported / ambTotal) * 100 : 0} />
         </div>
         <div>
           <div className="flex items-center justify-between text-sm mb-2">
             <span>Ambulances Active</span>
-            <span>{Math.round((active / ambulances.length) * 100)}%</span>
+            <span>{ambTotal ? Math.round((active / ambTotal) * 100) : 0}%</span>
           </div>
-          <Progress value={(active / ambulances.length) * 100} />
+          <Progress value={ambTotal ? (active / ambTotal) * 100 : 0} />
         </div>
         <div>
           <div className="flex items-center justify-between text-sm mb-2">

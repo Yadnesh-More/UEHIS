@@ -25,10 +25,21 @@ export function PreArrivalTriage() {
   )
 
   const onDropRole = (role: SeverityRole) => {
-    if (!draggedId) return
+    if (!draggedId || !activeCase) return
     const suggested = activeCase.suggestedHospitals[role]
     reassignAmbulance(draggedId, role, suggested)
     setDraggedId(null)
+  }
+
+  if (!activeCase) {
+    return (
+      <div className="space-y-6 p-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Pre-Arrival Triage</h1>
+          <p className="text-muted-foreground">Create a case in Emergency Case Management to load triage data from MongoDB.</p>
+        </div>
+      </div>
+    )
   }
 
   return (

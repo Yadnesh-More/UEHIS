@@ -20,73 +20,84 @@ import {
   Brain,
   BarChart3,
 } from 'lucide-react'
+import type { AppPageType } from '@/lib/auth-types'
 
-type PageType = 'dashboard' | 'cases' | 'triage' | 'ambulances' | 'hospitals' | 'blood' | 'insights' | 'reports'
-
-const menuItems = [
+const menuItems: {
+  title: string
+  items: { label: string; icon: typeof LayoutDashboard; page: AppPageType }[]
+}[] = [
   {
     title: 'Command Center',
     items: [
-      { label: 'Dashboard', icon: LayoutDashboard, page: 'dashboard' as PageType },
-      { label: 'Emergency Cases', icon: AlertCircle, page: 'cases' as PageType },
+      { label: 'Dashboard', icon: LayoutDashboard, page: 'dashboard' },
+      { label: 'Emergency Cases', icon: AlertCircle, page: 'cases' },
     ],
   },
   {
     title: 'Operations',
     items: [
-      { label: 'Pre-Arrival Triage', icon: Pill, page: 'triage' as PageType },
-      { label: 'Ambulance Management', icon: Ambulance, page: 'ambulances' as PageType },
-      { label: 'Hospital Management', icon: Hospital, page: 'hospitals' as PageType },
+      { label: 'Pre-Arrival Triage', icon: Pill, page: 'triage' },
+      { label: 'Ambulance Management', icon: Ambulance, page: 'ambulances' },
+      { label: 'Hospital Management', icon: Hospital, page: 'hospitals' },
     ],
   },
   {
     title: 'Resources',
     items: [
-      { label: 'Blood Bank', icon: Droplet, page: 'blood' as PageType },
-      { label: 'AI Insights', icon: Brain, page: 'insights' as PageType },
+      { label: 'Blood Bank', icon: Droplet, page: 'blood' },
+      { label: 'AI Insights', icon: Brain, page: 'insights' },
     ],
   },
   {
     title: 'Analytics',
-    items: [
-      { label: 'Reports', icon: BarChart3, page: 'reports' as PageType },
-    ],
+    items: [{ label: 'Reports', icon: BarChart3, page: 'reports' }],
   },
 ]
 
 interface AppSidebarProps {
-  currentPage: PageType
-  setCurrentPage: (page: PageType) => void
+  currentPage: AppPageType
+  setCurrentPage: (page: AppPageType) => void
+  allowedPages: AppPageType[]
 }
 
-export function AppSidebar({ currentPage, setCurrentPage }: AppSidebarProps) {
+export function AppSidebar({
+  currentPage,
+  setCurrentPage,
+  allowedPages,
+}: AppSidebarProps) {
+  const allowed = new Set(allowedPages)
+
   return (
     <Sidebar>
       <SidebarContent>
-        {menuItems.map((group) => (
-          <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.page}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={currentPage === item.page}
-                      onClick={() => setCurrentPage(item.page)}
-                      className="cursor-pointer"
-                    >
-                      <button className="flex items-center gap-2 w-full">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {menuItems.map((group) => {
+          const visible = group.items.filter((item) => allowed.has(item.page))
+          if (visible.length === 0) return null
+          return (
+            <SidebarGroup key={group.title}>
+              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {visible.map((item) => (
+                    <SidebarMenuItem key={item.page}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={currentPage === item.page}
+                        onClick={() => setCurrentPage(item.page)}
+                        className="cursor-pointer"
+                      >
+                        <button type="button" className="flex w-full items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </button>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )
+        })}
       </SidebarContent>
     </Sidebar>
   )

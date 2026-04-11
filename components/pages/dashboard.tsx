@@ -10,7 +10,8 @@ import { ExecutionTrackingPanel } from '@/components/execution-tracking-panel'
 export function Dashboard() {
   const { cases, activeCaseId, ambulances, hospitals, alerts } = useEmergency()
   const activeCase = cases.find((item) => item.id === activeCaseId) ?? cases[0]
-  const avgCapacity = Math.round(hospitals.reduce((acc, h) => acc + h.capacity, 0) / hospitals.length)
+  const avgCapacity =
+    hospitals.length > 0 ? Math.round(hospitals.reduce((acc, h) => acc + h.capacity, 0) / hospitals.length) : 0
 
   return (
     <div className="space-y-6 p-6">
@@ -29,7 +30,9 @@ export function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{cases.length}</div>
             <p className="text-xs text-muted-foreground">
-              {activeCase.severity.Critical} critical, {activeCase.severity.Moderate} moderate, {activeCase.severity.Minor} minor
+              {activeCase
+                ? `${activeCase.severity.Critical} critical, ${activeCase.severity.Moderate} moderate, ${activeCase.severity.Minor} minor`
+                : 'No active case selected'}
             </p>
           </CardContent>
         </Card>
@@ -142,29 +145,37 @@ export function Dashboard() {
             <CardDescription>Current case breakdown</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: 'Critical', value: activeCase.severity.Critical },
-                    { name: 'Moderate', value: activeCase.severity.Moderate },
-                    { name: 'Mild', value: activeCase.severity.Minor },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  <Cell fill="hsl(0, 100%, 50%)" />
-                  <Cell fill="hsl(45, 100%, 50%)" />
-                  <Cell fill="hsl(120, 100%, 40%)" />
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {activeCase ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Critical', value: activeCase.severity.Critical },
+                      { name: 'Burn', value: activeCase.severity.Burn },
+                      { name: 'Moderate', value: activeCase.severity.Moderate },
+                      { name: 'Minor', value: activeCase.severity.Minor },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    <Cell fill="hsl(0, 100%, 50%)" />
+                    <Cell fill="hsl(30, 100%, 50%)" />
+                    <Cell fill="hsl(45, 100%, 50%)" />
+                    <Cell fill="hsl(120, 100%, 40%)" />
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
+                Add a case to show severity distribution from the database.
+              </div>
+            )}
           </CardContent>
         </Card>
 
