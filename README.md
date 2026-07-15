@@ -44,24 +44,18 @@ By streamlining communication and resource management, UEHIS aims to reduce resp
 
 ### Backend
 - Node.js
-- Express.js
 
 ### Database
-- Supabase / PostgreSQL
+- MongoDB
 
 ### Authentication
 - Clerk Authentication
 
 ### AI & APIs
-- Google Gemini API (if applicable)
-- Google Maps API (if applicable)
+- Google Gemini API 
 
 ### Deployment
 - Vercel
-
-> *Update the technology stack above according to your implementation.*
-
----
 
 ## 🏗️ System Architecture
 
